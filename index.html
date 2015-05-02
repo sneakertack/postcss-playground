@@ -7,24 +7,45 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.2.0/theme/ambiance.css">
   <style>
     /* Big picture layout. */
+    * {box-sizing: border-box;}
+    html, body {height: 100%;}
     body {
       padding: 10px;
     }
+    
+    header {overflow: auto;} /* Clearfix. */
+    header > div {float: left;}
 
-    header {
-      overflow: auto;
+    header {height: 30%;}
+    section {height: 70%;}
+  
+    section {
+      overflow-x: auto;
+      overflow-y: hidden;
+      white-space: nowrap;
     }
+    section > div {display: inline-block; height: 97%;}
 
-    header > div {
-      float: left;
-      width: 50%;
-    }
 
-    #preprocessor + .CodeMirror {height: 200px;}
+    .CodeMirror {height: 100%;}
 
     .seperator {
       border: 0;
-      border-top: dashed 3px #ddd;
+      border-top: dashed 2px #ddd;
+      margin-top: 8px;
+      margin-bottom: 8px;
+    }
+    .seperator-unflow {margin-bottom: -18px;}
+    .pad-for-seperator {padding-top: 18px;}
+
+    .transition-between-asts {
+      height: auto;
+      width: 40px;
+      vertical-align: top;
+      text-align: center;
+      color: #ddd;
+      font-weight: bold;
+      font-size: 24px;
     }
 
     /* Aesthetic styling. */
@@ -34,7 +55,17 @@
       margin-bottom: 10px;
     }
 
+    /* CodeMirror-specific micro-styling. */
+
     .cm-rounded + .CodeMirror {border-radius: 5px;}
+    .cm-left-rounded + .CodeMirror {border-top-left-radius: 5px; border-bottom-left-radius: 5px;}
+    .cm-right-rounded + .CodeMirror {border-top-right-radius: 5px; border-bottom-right-radius: 5px;}
+
+    .CodeMirror.cm-s-default {
+      border: solid 1px #eee;
+    }
+    .siamese-right .CodeMirror {border-right: dashed 1px rgba(128, 128, 128, 0.2);}
+    .siamese-left .CodeMirror {border-left: 0;}
 
     .CodeMirror[label]:before {
       content: attr(label);
@@ -47,7 +78,6 @@
       right: 0;
       font: 11px monospace;
       text-shadow: 0 -1px rgba(0,0,0,0.1);
-      box-shadow: 0 0 8px rgba(0,0,0,0.4);
     }
 
   </style>
@@ -55,19 +85,41 @@
 <body>
   
   <header>
-    <div class="l-introduction">
+    <div class="l-introduction" style="width: 50%;">
       <h1>PostCSS Playground</h1>
       <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Nisi vel rerum, quisquam rem nostrum at, inventore nulla aliquid quis numquam molestiae cum expedita quod eveniet. Odio sunt quo iure eos.</p>
     </div>
-    <div class="l-preprocessor">
-      <textarea name="preprocessor" id="preprocessor" class="cm-rounded" code-mirror data-code-mode="javascript" data-code-label="Preprocessor" data-code-theme="ambiance">first textarea</textarea>
+    <div class="l-preprocessor" style="width: 50%;">
+      <textarea name="preprocessor" id="preprocessor" class="cm-rounded" code-mirror data-code-linenums="true" data-code-mode="javascript" data-code-label="Preprocessor" data-code-theme="ambiance">first textarea</textarea>
     </div>
   </header>
-
-  <hr class="seperator">
-
   
-  <textarea name="source" id="source" class="cm-rounded" code-mirror data-code-mode="javascript" data-code-theme="ambiance">second textarea</textarea>
+  <div class="seperator-unflow"><hr class="seperator"></div>
+  
+  <section class="pad-for-seperator">
+  
+    <!-- Beginning -->
+    <div class="l-source siamese-right" style="width: 20%">
+      <textarea name="source" id="source" class="cm-left-rounded" code-mirror data-code-label="Source">Source goes here.</textarea>
+    </div><!-- Anti-IB spacing. --><div class="l-source-ast siamese-left" style="width: 20%">
+      <textarea name="sourceAst" id="sourceAst" class="cm-right-rounded" code-mirror data-code-mode="javascript" data-code-label="AST">AST goes here.</textarea>
+    </div>
+  
+    <!-- Middle -->
+    <div class="transition-between-asts">&gt;</div>
+    <div class="l-ast-1" style="width: 20%">
+      <textarea name="ast1" id="ast1" class="cm-rounded" code-mirror data-code-mode="javascript" data-code-label="AST">AST goes here.</textarea>
+    </div>
+
+    <!-- End -->
+    <div class="transition-between-asts">&gt;</div>
+    <div class="l-css-ast siamese-right" style="width: 20%">
+      <textarea name="cssAst" id="cssAst" class="cm-left-rounded" code-mirror data-code-mode="javascript" data-code-label="AST">AST goes here.</textarea>
+    </div><!-- Anti-IB spacing. --><div class="l-css siamese-left" style="width: 20%">
+      <textarea name="css" id="css" class="cm-right-rounded" code-mirror data-code-mode="css" data-code-label="CSS">CSS goes here.</textarea>
+    </div>
+    
+  </section>
 
   <!-- Dependencies. -->
   <script src="//cdnjs.cloudflare.com/ajax/libs/codemirror/5.2.0/codemirror.min.js"></script>
@@ -78,10 +130,10 @@
   <script>
     var textareas = document.querySelectorAll("[code-mirror]");
     Array.prototype.forEach.call(textareas, function (textarea, index) {
-      var options = {
-        mode: textarea.dataset.codeMode,
-        theme: textarea.dataset.codeTheme,
-      };
+      var options = {};
+      if (textarea.dataset.codeMode) options.mode = textarea.dataset.codeMode;
+      if (textarea.dataset.codeTheme) options.theme = textarea.dataset.codeTheme;
+      if (textarea.dataset.codeLinenums) options.lineNumbers = true;
 
       // Instantiate new CodeMirror instance.
       var cm = CodeMirror.fromTextArea(textarea, options);
