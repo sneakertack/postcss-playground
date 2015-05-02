@@ -1,1 +1,95 @@
-<h1>hello world</h1>
+<html>
+<head>
+  <title>PostCSS Playground</title>
+  <link href='http://fonts.googleapis.com/css?family=Roboto:400,300,300italic,400italic,700,700italic' rel='stylesheet' type='text/css'>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/3.0.3/normalize.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.2.0/codemirror.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.2.0/theme/ambiance.css">
+  <style>
+    /* Big picture layout. */
+    body {
+      padding: 10px;
+    }
+
+    header {
+      overflow: auto;
+    }
+
+    header > div {
+      float: left;
+      width: 50%;
+    }
+
+    #preprocessor + .CodeMirror {height: 200px;}
+
+    .seperator {
+      border: 0;
+      border-top: dashed 3px #ddd;
+    }
+
+    /* Aesthetic styling. */
+    p, h1, h2, h3, h4, h5, h6 {
+      font-family: 'Roboto', sans-serif;
+      margin-top: 0;
+      margin-bottom: 10px;
+    }
+
+    .cm-rounded + .CodeMirror {border-radius: 5px;}
+
+    .CodeMirror[label]:before {
+      content: attr(label);
+      position: absolute;
+      border-bottom-left-radius: 5px;
+      padding: 3px;
+      color: white;
+      background-color: rgba(63, 108, 110, 0.39);
+      top: 0;
+      right: 0;
+      font: 11px monospace;
+      text-shadow: 0 -1px rgba(0,0,0,0.1);
+      box-shadow: 0 0 8px rgba(0,0,0,0.4);
+    }
+
+  </style>
+</head>
+<body>
+  
+  <header>
+    <div class="l-introduction">
+      <h1>PostCSS Playground</h1>
+      <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Nisi vel rerum, quisquam rem nostrum at, inventore nulla aliquid quis numquam molestiae cum expedita quod eveniet. Odio sunt quo iure eos.</p>
+    </div>
+    <div class="l-preprocessor">
+      <textarea name="preprocessor" id="preprocessor" class="cm-rounded" code-mirror data-code-mode="javascript" data-code-label="Preprocessor" data-code-theme="ambiance">first textarea</textarea>
+    </div>
+  </header>
+
+  <hr class="seperator">
+
+  
+  <textarea name="source" id="source" class="cm-rounded" code-mirror data-code-mode="javascript" data-code-theme="ambiance">second textarea</textarea>
+
+  <!-- Dependencies. -->
+  <script src="//cdnjs.cloudflare.com/ajax/libs/codemirror/5.2.0/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.2.0/mode/javascript/javascript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.2.0/mode/css/css.min.js"></script>
+
+  <!-- Behaviour. -->
+  <script>
+    var textareas = document.querySelectorAll("[code-mirror]");
+    Array.prototype.forEach.call(textareas, function (textarea, index) {
+      var options = {
+        mode: textarea.dataset.codeMode,
+        theme: textarea.dataset.codeTheme,
+      };
+
+      // Instantiate new CodeMirror instance.
+      var cm = CodeMirror.fromTextArea(textarea, options);
+
+      // Copy label data attribute from textarea onto its corresponding CodeMirror instance.
+      var label = textarea.dataset.codeLabel;
+      if (label) textarea.nextElementSibling.setAttribute('label', label);
+    });
+  </script>
+</body>
+</html>
