@@ -4,9 +4,14 @@
   <link href='http://fonts.googleapis.com/css?family=Roboto:400,300,300italic,400italic,700,700italic' rel='stylesheet' type='text/css'>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/3.0.3/normalize.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.2.0/codemirror.min.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.2.0/theme/ambiance.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.2.0/theme/ambiance.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.2.0/addon/fold/foldgutter.min.css">
   <style>
-    /* Big picture layout. */
+
+    /**
+     * Big-picture layout.
+     */
+    
     * {box-sizing: border-box;}
     html, body {height: 100%;}
     body {
@@ -24,8 +29,8 @@
       overflow-y: hidden;
       white-space: nowrap;
     }
-    section > div {display: inline-block; height: 97%;}
-
+    section > div, section > c-ast-chain {display: inline-block; height: 97%;}
+    c-ast-chain > div {display: inline-block; height: 100%;} 
 
     .CodeMirror {height: 100%;}
 
@@ -35,8 +40,8 @@
       margin-top: 8px;
       margin-bottom: 8px;
     }
-    .seperator-unflow {margin-bottom: -18px;}
-    .pad-for-seperator {padding-top: 18px;}
+    .midsection-unflow {margin-bottom: -40px;}
+    .pad-for-midsection {padding-top: 40px;}
 
     .transition-between-asts {
       height: auto;
@@ -48,6 +53,8 @@
       font-size: 24px;
     }
 
+
+
     /* Aesthetic styling. */
     p, h1, h2, h3, h4, h5, h6 {
       font-family: 'Roboto', sans-serif;
@@ -55,23 +62,47 @@
       margin-bottom: 10px;
     }
 
+    .code {
+      font-size: 12px;
+      white-space: normal;
+      color: #c25;
+      background-color: #f7f7f9;
+      border: 1px solid #e1e1e8;
+      padding: 1px 3px;
+      border-radius: 3px;
+      margin: 0 2px;
+    }
+
+    a.no-decoration {text-decoration: none;}
+
+
+
     /* CodeMirror-specific micro-styling. */
 
     .cm-rounded + .CodeMirror {border-radius: 5px;}
-    .cm-left-rounded + .CodeMirror {border-top-left-radius: 5px; border-bottom-left-radius: 5px;}
-    .cm-right-rounded + .CodeMirror {border-top-right-radius: 5px; border-bottom-right-radius: 5px;}
+
+    .cm-small-font + .CodeMirror {font-size: 10px;}
 
     .CodeMirror.cm-s-default {
       border: solid 1px #eee;
     }
-    .siamese-right .CodeMirror {border-right: dashed 1px rgba(128, 128, 128, 0.2);}
-    .siamese-left .CodeMirror {border-left: 0;}
+    .siamese-right .CodeMirror {
+      border-top-right-radius: 0;
+      border-bottom-right-radius: 0;
+      border-right: dashed 1px rgba(128, 128, 128, 0.2);
+    }
+    .siamese-left .CodeMirror {
+      border-top-left-radius: 0;
+      border-bottom-left-radius: 0;
+      border-left: 0;
+    }
 
     .CodeMirror[label]:before {
       content: attr(label);
       position: absolute;
       border-bottom-left-radius: 5px;
       padding: 3px;
+      padding-right: 18px; /* Space for scrollbars. */
       color: white;
       background-color: rgba(63, 108, 110, 0.39);
       top: 0;
@@ -80,68 +111,382 @@
       text-shadow: 0 -1px rgba(0,0,0,0.1);
     }
 
+    .cm-dashed-bottom {border-bottom: dashed 1px rgba(128,128,128,0.3);}
+    .cm-dashed-top {border-top: dashed 1px rgba(128,128,128,0.3);}
+
+
+
+    /**
+     * Other supporting components (usually Ractive)
+     */
+    
+    c-preproc-error {
+      position: absolute;
+      bottom: 0;
+      right: 15px;
+      overflow: hidden;
+    }
+    c-preproc-error > div {
+      background-color: rgba(255,0,0,0.7);
+      color: white;
+      font-size: 10px;
+      padding: 2px 4px;
+      border-top-left-radius: 3px;
+      border-top-right-radius: 3px;
+      -webkit-transition: 0.2s;
+      transition: 0.1s;
+      position: relative;
+      top: 15px;
+      opacity: 0;
+    }
+    c-preproc-error > div.active {
+      top: 0;
+      opacity: 1;
+    }
+
   </style>
+
+  <!-- Ractive. Loaded at start because markup declares ractives halfway through. -->
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/ractive/0.7.2/ractive.min.js'></script>
+
 </head>
 <body>
   
   <header>
-    <div class="l-introduction" style="width: 50%;">
+    <div class="l-introduction" style="width: 50%; height: 100%; overflow: auto; line-height: 1.5;">
       <h1>PostCSS Playground</h1>
-      <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Nisi vel rerum, quisquam rem nostrum at, inventore nulla aliquid quis numquam molestiae cum expedita quod eveniet. Odio sunt quo iure eos.</p>
+      <!-- GitHub repository buttons -->
+      <div>
+        <iframe src="https://ghbtns.com/github-btn.html?user=sneakertack&repo=postcss-playground&type=star&count=true" frameborder="0" scrolling="0" width="80px" height="20px"></iframe>
+        <iframe src="https://ghbtns.com/github-btn.html?user=sneakertack&repo=postcss-playground&type=fork&count=true" frameborder="0" scrolling="0" width="80px" height="20px"></iframe>
+        <iframe src="https://ghbtns.com/github-btn.html?user=sneakertack&type=follow&count=true" frameborder="0" scrolling="0" width="200px" height="20px"></iframe>
+      </div>
+      
+      <p>This page lets you try your hand at building a simple PostCSS processor. <strong>Processor code</strong> goes on the right. <strike>CSS</strike> <strong>Source code</strong> goes in below-left, and it gets transformed (from left to right) into valid CSS.</p>
+      <p>PostCSS has <a href="https://github.com/postcss/postcss#plugins" target="_blank">many plugins</a>. For this demo, the following example plugins have been made available in global scope: <a class="no-decoration" href="https://github.com/HashanP/postcss-spiffing" target="_blank"><code class="code">spiffing</code></a>, <a class="no-decoration" href="https://github.com/postcss/autoprefixer-core" target="_blank"><code class="code">autoprefixer</code></a>, <a class="no-decoration" href="https://github.com/postcss/postcss-simple-vars" target="_blank"><code class="code">simpleVars</code></a>, and <a class="no-decoration" href="https://github.com/postcss/postcss-nested" target="_blank"><code class="code">nested</code></a>.</p>
     </div>
-    <div class="l-preprocessor" style="width: 50%;">
-      <textarea name="preprocessor" id="preprocessor" class="cm-rounded" code-mirror data-code-linenums="true" data-code-mode="javascript" data-code-label="Preprocessor" data-code-theme="ambiance">first textarea</textarea>
+    <div class="l-preprocessor" style="width: 50%; position: relative;">
+      <textarea name="preprocessor" id="preprocessor" class="cm-rounded" code-mirror data-code-linenums="true" code-mirror data-code-line-wrapping="true" data-code-mode="javascript" data-code-label="Preprocessor" data-code-theme="ambiance">
+
+/* In this case we are requiring PostCSS as if it's vanilla Node. Integrations for Grunt/Gulp/CLI/others also exist. */
+var postcss = require('postcss');
+
+var yourProcessor = postcss()
+  // .use(spiffing)
+  // .use(autoprefixer)
+  // .use(simpleVars)
+  // .use(nested)
+  // Add whatever plugins you want.
+
+// Output compiled CSS.
+var output = yourProcessor.process(source).css;</textarea>
+      <c-preproc-error></c-preproc-error>
+      <script type="text/html" id="cPreprocError">
+        <div class="{{ present ? 'active' : '' }}">{{ message }}</div>
+      </script>
+      <script>
+      var cPreprocError = new Ractive({
+        el: document.getElementsByTagName('c-preproc-error')[0],
+        template: '#cPreprocError',
+        data: {present: false, message: ''}
+      });
+      </script>
     </div>
   </header>
   
-  <div class="seperator-unflow"><hr class="seperator"></div>
+  <div class="midsection-unflow">
+    <hr class="seperator">
+    <c-preferences></c-preferences>
+    <script type="text/html" id="cPreferences">
+      <div class="l-control-panel" style="text-align: right; font-style: italic; height: 22px;">
+        <span style="margin-right: 5px;"><strong>AST View: </strong></span>
+        <label style="margin-right: 5px;"><input type="radio" name="{{ astFolding }}" value="compressed" checked> Essentials only</label>
+        <label><input type="radio" name="{{ astFolding }}" value="expanded"> Fully expanded</label>
+      </div>
+    </script>
+    <script>
+      var cPreferences = new Ractive({
+        el: document.getElementsByTagName('c-preferences')[0],
+        template: '#cPreferences',
+        data: {astFolding: 'compressed'},
+        onchange: function () {
+          digestTextareasToCodeMirrors();
+        }
+      });
+    </script>
+    
+  </div>
   
-  <section class="pad-for-seperator">
-  
+  <section id="mainSection" class="pad-for-midsection">
+
     <!-- Beginning -->
-    <div class="l-source siamese-right" style="width: 20%">
-      <textarea name="source" id="source" class="cm-left-rounded" code-mirror data-code-label="Source">Source goes here.</textarea>
-    </div><!-- Anti-IB spacing. --><div class="l-source-ast siamese-left" style="width: 20%">
-      <textarea name="sourceAst" id="sourceAst" class="cm-right-rounded" code-mirror data-code-mode="javascript" data-code-label="AST">AST goes here.</textarea>
-    </div>
-  
-    <!-- Middle -->
-    <div class="transition-between-asts">&gt;</div>
-    <div class="l-ast-1" style="width: 20%">
-      <textarea name="ast1" id="ast1" class="cm-rounded" code-mirror data-code-mode="javascript" data-code-label="AST">AST goes here.</textarea>
+    <div class="l-source siamese-right" style="width: 300px">
+      <textarea name="source" id="source" class="cm-rounded" code-mirror data-code-label="Source" data-code-linenums="true">
+body {
+  colour: white;
+  background-colour: grey;
+}</textarea>
     </div>
 
+    <!-- Middle. -4pxs are to counteract whitespace between inline-blocks. -->
+    <c-ast-chain style="margin-left: -4px; margin-right: -4px;"></c-ast-chain>
+    <script type="text/html" id="cAstChain">
+      {{#each astChain:index}}
+        {{#if index !== 0}}
+          <div class="transition-between-asts">&gt;</div>
+        {{/if}}
+        <div class="l-ast-{{ index }} {{ index === 0 ? 'siamese-left' : '' }} {{ index === astChain.length - 1 ? 'siamese-right' : '' }}" style="width: 300px">
+          <textarea name="ast{{ index }}" id="ast{{ index }}" class="cm-rounded cm-small-font" code-mirror data-code-mode="javascript" data-code-label="AST"  data-code-read-only="nocursor" value="{{ this }}"></textarea>
+        </div>
+      {{/each}}
+    </script>
+    <script>
+      var cAstChain = new Ractive({
+        el: document.getElementsByTagName('c-ast-chain')[0],
+        template: '#cAstChain',
+        data: {astChain: ['bla', 'bleh']}
+      });
+    </script>
+
     <!-- End -->
-    <div class="transition-between-asts">&gt;</div>
-    <div class="l-css-ast siamese-right" style="width: 20%">
-      <textarea name="cssAst" id="cssAst" class="cm-left-rounded" code-mirror data-code-mode="javascript" data-code-label="AST">AST goes here.</textarea>
-    </div><!-- Anti-IB spacing. --><div class="l-css siamese-left" style="width: 20%">
-      <textarea name="css" id="css" class="cm-right-rounded" code-mirror data-code-mode="css" data-code-label="CSS">CSS goes here.</textarea>
+    <div id="lCss" class="l-css siamese-left" style="width: 300px">
+      <textarea name="css" id="css" class="cm-rounded" code-mirror data-code-mode="css" data-code-label="CSS"  data-code-read-only="nocursor">CSS goes here.</textarea>
     </div>
     
   </section>
 
-  <!-- Dependencies. -->
+  <!-- DEPENDENCIES -->
+  <!-- Lodash. -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/3.8.0/lodash.min.js"></script>
+
+  <!-- CodeMirror. -->
   <script src="//cdnjs.cloudflare.com/ajax/libs/codemirror/5.2.0/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.2.0/addon/fold/foldcode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.2.0/addon/fold/foldgutter.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.2.0/addon/fold/brace-fold.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.2.0/mode/javascript/javascript.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.2.0/mode/css/css.min.js"></script>
+  
+  <!-- Things from Node. -->
+  <script src="/modules/bundle.js"></script>
 
-  <!-- Behaviour. -->
+
+
+  <!-- BEHAVIOUR -->
   <script>
-    var textareas = document.querySelectorAll("[code-mirror]");
-    Array.prototype.forEach.call(textareas, function (textarea, index) {
-      var options = {};
-      if (textarea.dataset.codeMode) options.mode = textarea.dataset.codeMode;
-      if (textarea.dataset.codeTheme) options.theme = textarea.dataset.codeTheme;
-      if (textarea.dataset.codeLinenums) options.lineNumbers = true;
+    /* Hoisting: functions are defined at the bottom. */
 
-      // Instantiate new CodeMirror instance.
-      var cm = CodeMirror.fromTextArea(textarea, options);
+    patchPostcssForDemo(window.modules.postcss);
+    window.postcss = require('postcss');
+    // Make example postcss plugins immediately available without require-ing in processor code.
+    window.spiffing = require('spiffing');
+    window.autoprefixer = require('autoprefixer');
+    window.simpleVars = require('simpleVars');
+    window.nested = require('nested');
 
-      // Copy label data attribute from textarea onto its corresponding CodeMirror instance.
-      var label = textarea.dataset.codeLabel;
-      if (label) textarea.nextElementSibling.setAttribute('label', label);
+    // Init.
+    digestTextareasToCodeMirrors();    
+
+    // Patch: Only allow the user to edit plugin choice in the preprocessor code window.
+    codeMirrors.preprocessor.markText({line: 0}, {line: 3}, {atomic: true, readOnly: true, inclusiveLeft: true});
+    codeMirrors.preprocessor.markText({line: 10}, {line: 12}, {atomic: true, readOnly: true, inclusiveRight: true});
+    codeMirrors.preprocessor.addLineClass(2, 'wrap', 'cm-dashed-bottom');
+    codeMirrors.preprocessor.addLineClass(11, 'wrap', 'cm-dashed-top');
+
+    var subprocessorChain = [];
+
+    // Wire up preprocessor editor.
+    digestReloadSubprocessors(); // Init.
+    codeMirrors.preprocessor.on('changes', function () {
+      codeMirrors.preprocessor.save();
+
+      digestReloadSubprocessors();
+      digestRenderAstChain();
+      digestTextareasToCodeMirrors();
     });
+
+
+    // Wire up source editor.
+    digestRenderAstChain(); // Init.
+    codeMirrors.source.on('changes', function () {
+      codeMirrors.source.save();
+
+      digestRenderAstChain();
+      digestTextareasToCodeMirrors();
+    });
+
+    // 2nd Update in case of changes.
+    digestTextareasToCodeMirrors();
+
+
+
+    /**
+     * DIGEST LOOP
+     */
+
+    function digestCycle() {
+      digestTextareasToCodeMirrors();
+    }
+
+    function digestReloadSubprocessors() {
+      var oldSubprocessorChain = subprocessorChain;
+      try {
+        subprocessorChain = []; // Clear.
+        var preprocessorCode = codeMirrors.preprocessor.getValue();
+
+        // Don't run the last line, it's more for illustration.
+        preprocessorCode = preprocessorCode.split('\n').slice(0, -1).join('\n');
+
+        /* jshint evil:true  */
+        eval(preprocessorCode);
+        cPreprocError.set('present', false);
+      } catch (e) {
+        subprocessorChain = oldSubprocessorChain; // Revert.
+        cPreprocError.set({
+          present: true,
+          message: e.message
+        });
+      }
+    }
+
+
+
+    function digestRenderAstChain() {
+      var source = codeMirrors.source.getValue();
+
+      var firstAst;
+      try {
+        firstAst = postcss.parse(source, {safe: true});
+      } catch (e) {
+        firstAst = e;
+      }
+
+      var astChain = subprocessorChain.reduce(function (chain, subprocessor) {
+        var prevAst = chain[chain.length - 1];
+        if (_.isError(prevAst)) {
+          chain.push(prevAst);
+        } else {
+          try {
+            var next = subprocessor.process(prevAst.toResult().css, {safe: true}).root;
+            chain.push(next);
+          } catch (e) {
+            chain.push(e);
+          }
+        }
+        return chain;
+      }, [firstAst]);
+      var lastAst = astChain[astChain.length - 1];
+
+      astChain = astChain.map(function (ast) {
+        if (_.isError(ast)) {
+          return ast.message;
+        } else {
+          return JSON.stringify(ast, null, ' '); // Single-space indenting.
+        }
+      });
+
+      cAstChain.set('astChain', astChain);
+      if (_.isError(lastAst)) {
+        codeMirrors.css.getTextArea().value = lastAst.message;
+      } else {
+        codeMirrors.css.getTextArea().value = lastAst.toResult().css;
+      }
+      
+
+    }
+
+
+
+    function digestTextareasToCodeMirrors() {
+
+      // Global CodeMirror instance registry.
+      window.codeMirrors = window.codeMirrors || {};
+
+      // Iterate over all existing codeMirrors, if any, to delete them if their corresponding textarea is gone.
+      Array.prototype.forEach.call(document.getElementsByClassName('CodeMirror'), function (codeMirrorElement) {
+        var id = codeMirrorElement.getAttribute('for');
+        if (document.getElementById(id) === null) {
+          delete window.codeMirrors[id];
+          codeMirrorElement.parentNode.removeChild(codeMirrorElement);
+          console.log('Deleted codeMirror '+id+'.');
+        }
+      });
+
+      // Iterate over all textareas to update or add a corresponding CodeMirror instance.Caveat: Updating textarea data-properties doesn't update corresponding CodeMirror configuration.
+      var textareas = document.querySelectorAll("[code-mirror]");
+      Array.prototype.forEach.call(textareas, function (textarea, index) {
+
+        // If already existing, merely update if changed. Otherwise, instantiate a new instance.
+        if (Array.prototype.indexOf.call((textarea.nextElementSibling || {}).classList || [], 'CodeMirror') > -1) {
+          if (codeMirrors[textarea.id].getValue() !== textarea.value) codeMirrors[textarea.id].setValue(textarea.value);
+        } else {
+          // Prepare CodeMirror configuration.
+          var options = { // Defaults for all instances.
+            tabSize: 2,
+            foldGutter: true,
+            gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"]
+          };
+
+          // Instance-specific configuration based on data attributes.
+          if (textarea.dataset.codeMode) options.mode = textarea.dataset.codeMode;
+          if (textarea.dataset.codeTheme) options.theme = textarea.dataset.codeTheme;
+          if (textarea.dataset.codeLinenums) options.lineNumbers = true;
+          if (textarea.dataset.codeLineWrapping) options.lineWrapping = true;
+          if (textarea.dataset.codeReadOnly) options.readOnly = textarea.dataset.codeReadOnly === 'nocursor' ? 'nocursor' : true;
+
+          // Instantiate new CodeMirror instance, then register in global registry.
+          var cm = CodeMirror.fromTextArea(textarea, options);
+          codeMirrors[textarea.id] = cm;
+
+          // Patch: Copy label data attribute from textarea onto its corresponding codeMirror.
+          var label = textarea.dataset.codeLabel;
+          if (label) cm.getWrapperElement().setAttribute('label', label);
+          // Patch: Note down which textarea this codeMirror is for.
+          cm.getWrapperElement().setAttribute('for', textarea.id);
+
+          console.log('Instantiated codeMirror '+textarea.id+'.');
+        }
+
+        if (cPreferences.get('astFolding') === 'compressed') {
+          foldUnwantedCode(codeMirrors[textarea.id]);
+        } else {
+          codeMirrors[textarea.id].execCommand('unfoldAll');
+        }
+      });
+
+
+      function foldUnwantedCode(codeMirror) {
+        codeMirror.eachLine(function (line) {
+          if (/\"source\"\: \{/.test(line.text)) {
+            codeMirror.foldCode(line.lineNo());
+          }
+        });
+      }
+    }
+
+
+
+    /**
+     * TOOLING / PATCHES / OVERRIDES
+     */
+    
+    function require(moduleName) {
+      return window.modules[moduleName];
+    }
+
+    function patchPostcssForDemo(postcss) {
+      var processorPrototype = Object.getPrototypeOf(postcss());
+
+      var use = processorPrototype.use;
+      processorPrototype.use = function () {
+        var subprocessor = new postcss();
+        use.apply(subprocessor, arguments);
+        subprocessorChain.push(subprocessor);
+
+        return use.apply(this, arguments);        
+      };
+    }
+
   </script>
 </body>
 </html>
